@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.persistence.EntityManager;
+
+
 public class UserDB {
 
     public int insert(User user) throws NotesDBException {
@@ -100,37 +103,18 @@ public class UserDB {
      * @throws NotesDBException
      */
     public User getUser(String username) throws NotesDBException {
-        ConnectionPool pool = ConnectionPool.getInstance();
-        Connection connection = pool.getConnection();
-        String selectSQL = "SELECT * FROM users WHERE username = ?";
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-
+       
+        EntityManager em = DBUtil.getEmFactory().createEntityManager();
+        
         try {
-            ps = connection.prepareStatement(selectSQL);
-            ps.setString(1, username);
-            rs = ps.executeQuery();
-
-            User user = null;
-            while (rs.next()) {
-                user = new User(rs.getString("username"),
-                        rs.getString("password"),
-                        rs.getString("firstname"),
-                        rs.getString("lastname"),
-                        rs.getString("email"));
-            }
-            pool.freeConnection(connection);
+            
+            User user = em.find(User.class, username); //primary key
+            //it will contain every relational object
+            
             return user;
-        } catch (SQLException ex) {
-            Logger.getLogger(UserDB.class.getName()).log(Level.SEVERE, "Cannot read users", ex);
-            throw new NotesDBException("Error getting Users");
+        
         } finally {
-            try {
-                rs.close();
-                ps.close();
-            } catch (SQLException ex) {
-            }
-            pool.freeConnection(connection);
+            em.close();
         }
     }
 
